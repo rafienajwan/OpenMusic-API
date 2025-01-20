@@ -13,9 +13,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "auto-bind": "^4.0.0",
     "dotenv": "^16.4.7",
     "joi": "^17.13.3",
-    "nanoid": "^5.0.9",
+    "nanoid": "^3.3.8",
     "node-pg-migrate": "^7.9.0",
     "pg": "^8.13.1"
   },
@@ -23,6 +24,7 @@
     "@eslint/js": "^9.18.0",
     "@hapi/hapi": "^21.3.12",
     "eslint": "^9.18.0",
+    "eslint-config-dicodingacademy": "^0.9.4",
     "globals": "^15.14.0",
     "nodemon": "^3.1.9"
   }
