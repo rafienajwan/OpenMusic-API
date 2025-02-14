@@ -19,15 +19,33 @@ class SongsService {
 
     const result = await this._pool.query(query);
 
-    if (!result.rows.length) {
+    if (!result.rows[0].id) {
       throw new InvariantError('Failed to add song');
     }
 
     return result.rows[0].id;
   }
 
-  async getSongs() {
-    const result = await this._pool.query('SELECT id, title, performer FROM songs');
+  async getSongs({ title, performer }) {
+    let query = 'SELECT id, title, performer FROM songs';
+    const conditions = [];
+    const values = [];
+
+    if (title) {
+      conditions.push(`title ILIKE $${  conditions.length + 1}`);
+      values.push(`%${title}%`);
+    }
+
+    if (performer) {
+      conditions.push(`performer ILIKE $${  conditions.length + 1}`);
+      values.push(`%${performer}%`);
+    }
+
+    if (conditions.length > 0) {
+      query += ` WHERE ${  conditions.join(' AND ')}`;
+    }
+
+    const result = await this._pool.query(query, values);
     return result.rows.map(mapSongsToModel);
   }
 
