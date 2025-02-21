@@ -44,14 +44,14 @@ const init = async () => {
   });
 
 
-  // registrasi plugin eksternal
+  // external plugin registration
   await server.register([
     {
       plugin: Jwt,
     },
   ]);
 
-  // mendefinisikan strategy autentikasi jwt
+  // defining jwt authentication strategy
   server.auth.strategy('openmusic_jwt', 'jwt', {
     keys: process.env.ACCESS_TOKEN_KEY,
     verify: {
@@ -102,12 +102,12 @@ const init = async () => {
   ]);
 
   server.ext('onPreResponse', (request, h) => {
-    // mendapatkan konteks response dari request
+    // getting the response context from the request
     const { response } = request;
 
     if (response instanceof Error) {
 
-      // penanganan client error secara internal.
+      // internal client error handling.
       if (response instanceof ClientError) {
         const newResponse = h.response({
           status: 'fail',
@@ -117,12 +117,12 @@ const init = async () => {
         return newResponse;
       }
 
-      // mempertahankan penanganan client error oleh hapi secara native, seperti 404, etc.
+      // defending the native client error handling by hapi, such as 404, etc.
       if (!response.isServer) {
         return h.continue;
       }
 
-      // penanganan server error sesuai kebutuhan
+      // server error handling as required
       const newResponse = h.response({
         status: 'error',
         message: 'There was an internal server error',
@@ -131,12 +131,12 @@ const init = async () => {
       return newResponse;
     }
 
-    // jika bukan error, lanjutkan dengan response sebelumnya (tanpa terintervensi)
+    // if not an error, continue with the previous response (without intervention)
     return h.continue;
   });
 
   await server.start();
-  console.log(`Server berjalan pada ${server.info.uri}`);
+  console.log(`Server hosted at ${server.info.uri}`);
 };
 
 init();

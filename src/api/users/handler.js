@@ -16,12 +16,12 @@ class UsersHandler {
     const userId = await this._service.addUser({ username, password, fullname });
 
     if (!userId) {
-      throw new ClientError('User gagal ditambahkan');
+      throw new ClientError('User failed to add', 500);
     }
 
     const response = h.response({
       status: 'success',
-      message: 'User berhasil ditambahkan',
+      message: 'User successfully added',
       data: {
         userId,
       },
@@ -68,7 +68,7 @@ class UsersHandler {
       // Server ERROR!
       const response = h.response({
         status: 'error',
-        message: 'Maaf, terjadi kegagalan pada server kami.',
+        message: 'Sorry, something went wrong.',
       });
       response.code(500);
       console.error(error);
