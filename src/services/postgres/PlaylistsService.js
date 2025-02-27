@@ -26,19 +26,24 @@ class PlaylistsService {
     return result.rows[0].id;
   }
 
-  async getPlaylistById(id) {
+  async getPlaylists(owner) {
     const query = {
-      text: 'SELECT id, name, owner FROM playlists WHERE id = $1',
-      values: [id],
+      text: `
+        SELECT playlists.id, playlists.name, users.username 
+        FROM playlists 
+        JOIN users ON playlists.owner = users.id 
+        WHERE playlists.owner = $1
+      `,
+      values: [owner],
     };
 
     const result = await this._pool.query(query);
 
     if (!result.rows.length) {
-      throw new NotFoundError('Playlist not found');
+      throw new NotFoundError('No playlist found');
     }
 
-    return result.rows[0];
+    return result.rows;
   }
 
   async deletePlaylistById(id) {
