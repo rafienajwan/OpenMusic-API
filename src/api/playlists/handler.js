@@ -1,4 +1,6 @@
 const autoBind = require('auto-bind');
+const NotFoundError = require('../../exceptions/NotFoundError');
+const InvariantError = require('../../exceptions/InvariantError');
 
 class PlaylistsHandler {
   constructor(service, validator) {
@@ -54,23 +56,46 @@ class PlaylistsHandler {
   }
 
   async postPlaylistSongHandler(request, h) {
-    this._validator.validatePlaylistSongPayload(request.payload);
-    const { id: credentialId } = request.auth.credentials;
-    const { playlistId } = request.params;
-    const { songId } = request.payload;
+    try {
+      this._validator.validatePlaylistSongPayload(request.payload);
+      const { id: credentialId } = request.auth.credentials;
+      const { playlistId } = request.params;
+      const { songId } = request.payload;
 
-    await this._service.verifyPlaylistAccess(playlistId, credentialId);
-    const playlistSongId = await this._service.addPlaylistSong(playlistId, songId);
+      await this._service.verifyPlaylistAccess(playlistId, credentialId);
+      const playlistSongId = await this._service.addPlaylistSong(playlistId, songId);
 
-    const response = h.response({
-      status: 'success',
-      message: 'Song has been added to the playlist successfully',
-      data: {
-        playlistSongId,
-      },
-    });
-    response.code(201);
-    return response;
+      const response = h.response({
+        status: 'success',
+        message: 'Song has been added to the playlist successfully',
+        data: {
+          playlistSongId,
+        },
+      });
+      response.code(201);
+      return response;
+    } catch (error) {
+      if (error instanceof NotFoundError) {
+        const response = h.response({
+          status: 'fail',
+          message: error.message,
+        });
+        response.code(404);
+        return response;
+      }
+
+      if (error instanceof InvariantError) {
+        const response = h.response({
+          status: 'fail',
+          message: error.message,
+        });
+        response.code(400);
+        return response;
+      }
+
+      // Re-throw the error if it's not a NotFoundError or InvariantError
+      throw error;
+    }
   }
 
   async getPlaylistSongsHandler(request, h) {
@@ -78,12 +103,12 @@ class PlaylistsHandler {
     const { playlistId } = request.params;
 
     await this._service.verifyPlaylistAccess(playlistId, credentialId);
-    const songs = await this._service.getPlaylistSongs(playlistId);
+    const playlist = await this._service.getPlaylistSongs(playlistId);
 
     const response = h.response({
       status: 'success',
       data: {
-        songs,
+        playlist,
       },
     });
     response.code(200);
