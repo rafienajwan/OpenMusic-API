@@ -1,6 +1,4 @@
 const InvariantError = require('../../exceptions/InvariantError');
-const NotFoundError = require('../../exceptions/NotFoundError');
-
 const { PlaylistPayloadSchema, PlaylistSongPayloadSchema } = require('./schema');
 
 const PlaylistsValidator = {
@@ -15,7 +13,7 @@ const PlaylistsValidator = {
     const validationResult = PlaylistSongPayloadSchema.validate(payload);
 
     if (validationResult.error) {
-      throw new NotFoundError(validationResult.error.message);
+      throw new InvariantError(validationResult.error.message);
     }
   },
 };
