@@ -59,6 +59,64 @@ class PlaylistsService {
     }
   }
 
+  async addPlaylistSong(playlistId, songId) {
+    const id = `playlistsongs-${nanoid(16)}`;
+
+    const query = {
+      text: `
+        WITH song_check AS (
+          SELECT id FROM songs WHERE id = $1
+        )
+        INSERT INTO playlistsongs (id, playlist_id, song_id)
+        SELECT $2, $3, $1
+        FROM song_check
+        RETURNING id
+      `,
+      values: [songId, id, playlistId],
+    };
+
+    const result = await this._pool.query(query);
+
+    if (!result.rows.length) {
+      throw new NotFoundError('Failed to add song to playlist. Song not found');
+    }
+
+    return result.rows[0].id;
+  }
+
+  async getPlaylistSongs(playlistId) {
+    const query = {
+      text: `
+        SELECT songs.id, songs.title, songs.performer 
+        FROM playlistsongs
+        JOIN songs ON playlistsongs.song_id = songs.id
+        WHERE playlistsongs.playlist_id = $1
+      `,
+      values: [playlistId],
+    };
+
+    const result = await this._pool.query(query);
+
+    if (!result.rows.length) {
+      throw new NotFoundError('No song found in playlist');
+    }
+
+    return result.rows;
+  }
+
+  async deletePlaylistSongById(playlistId, songId) {
+    const query = {
+      text: 'DELETE FROM playlistsongs WHERE playlist_id = $1 AND song_id = $2 RETURNING id',
+      values: [playlistId, songId],
+    };
+
+    const result = await this._pool.query(query);
+
+    if (!result.rows.length) {
+      throw new NotFoundError('Failed to delete song from playlist. Id not found');
+    }
+  }
+
   async verifyPlaylistOwner(playlistId, owner) {
     const query = {
       text: 'SELECT owner FROM playlists WHERE id = $1',
