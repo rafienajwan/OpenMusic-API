@@ -85,7 +85,25 @@ class PlaylistsService {
   }
 
   async getPlaylistSongs(playlistId) {
-    const query = {
+    const playlistQuery = {
+      text: `
+        SELECT playlists.id, playlists.name, users.username 
+        FROM playlists 
+        JOIN users ON playlists.owner = users.id 
+        WHERE playlists.id = $1
+      `,
+      values: [playlistId],
+    };
+
+    const playlistResult = await this._pool.query(playlistQuery);
+
+    if (!playlistResult.rows.length) {
+      throw new NotFoundError('Playlist not found');
+    }
+
+    const playlist = playlistResult.rows[0];
+
+    const songsQuery = {
       text: `
         SELECT songs.id, songs.title, songs.performer 
         FROM playlistsongs
@@ -95,13 +113,11 @@ class PlaylistsService {
       values: [playlistId],
     };
 
-    const result = await this._pool.query(query);
+    const songsResult = await this._pool.query(songsQuery);
 
-    if (!result.rows.length) {
-      throw new NotFoundError('No song found in playlist');
-    }
+    playlist.songs = songsResult.rows;
 
-    return result.rows;
+    return playlist;
   }
 
   async deletePlaylistSongById(playlistId, songId) {
