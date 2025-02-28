@@ -116,13 +116,13 @@ class PlaylistsHandler {
   }
 
   async deletePlaylistSongByIdHandler(request, h) {
-    this._validator.validatePlaylistPayload(request.payload);
+    this._validator.validatePlaylistSongPayload(request.payload);
     const { id: credentialId } = request.auth.credentials;
     const { playlistId } = request.params;
     const { songId } = request.payload;
 
     await this._service.verifyPlaylistAccess(playlistId, credentialId);
-    await this._service.deletePlaylistSongById(playlistId, songId);
+    await this._service.deletePlaylistSongById(songId);
 
     const response = h.response({
       status: 'success',
