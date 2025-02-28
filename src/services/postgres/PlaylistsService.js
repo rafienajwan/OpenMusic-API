@@ -120,17 +120,19 @@ class PlaylistsService {
     return playlist;
   }
 
-  async deletePlaylistSongById(playlistId, songId) {
+  async deletePlaylistSongById(songId) {
     const query = {
-      text: 'DELETE FROM playlistsongs WHERE playlist_id = $1 AND song_id = $2 RETURNING id',
-      values: [playlistId, songId],
+      text: 'DELETE FROM playlistsongs WHERE song_id = $1 RETURNING id',
+      values: [songId],
     };
 
     const result = await this._pool.query(query);
 
     if (!result.rows.length) {
-      throw new NotFoundError('Failed to delete song from playlist. Id not found');
+      throw new NotFoundError('Failed to delete song from playlist. Song not found');
     }
+
+    return result.rows[0].id;
   }
 
   async verifyPlaylistOwner(playlistId, owner) {
