@@ -1,6 +1,7 @@
 const autoBind = require('auto-bind');
 const NotFoundError = require('../../exceptions/NotFoundError');
 const InvariantError = require('../../exceptions/InvariantError');
+const AuthorizationError = require('../../exceptions/AuthorizationError');
 
 class PlaylistsHandler {
   constructor(service, validator) {
@@ -63,7 +64,7 @@ class PlaylistsHandler {
       const { songId } = request.payload;
 
       await this._service.verifyPlaylistAccess(playlistId, credentialId);
-      const playlistSongId = await this._service.addPlaylistSong(playlistId, songId);
+      const playlistSongId = await this._service.addPlaylistSong(playlistId, songId, credentialId);
 
       const response = h.response({
         status: 'success',
@@ -99,20 +100,42 @@ class PlaylistsHandler {
   }
 
   async getPlaylistSongsHandler(request, h) {
-    const { id: credentialId } = request.auth.credentials;
-    const { playlistId } = request.params;
+    try {
+      const { id: credentialId } = request.auth.credentials;
+      const { playlistId } = request.params;
 
-    await this._service.verifyPlaylistAccess(playlistId, credentialId);
-    const playlist = await this._service.getPlaylistSongs(playlistId);
+      await this._service.verifyPlaylistAccess(playlistId, credentialId);
+      const playlist = await this._service.getPlaylistSongs(playlistId);
 
-    const response = h.response({
-      status: 'success',
-      data: {
-        playlist,
-      },
-    });
-    response.code(200);
-    return response;
+      const response = h.response({
+        status: 'success',
+        data: {
+          playlist,
+        },
+      });
+      response.code(200);
+      return response;
+    } catch (error) {
+      if (error instanceof AuthorizationError) {
+        const response = h.response({
+          status: 'fail',
+          message: error.message,
+        });
+        response.code(403);
+        return response;
+      }
+
+      if (error instanceof NotFoundError) {
+        const response = h.response({
+          status: 'fail',
+          message: error.message,
+        });
+        response.code(404);
+        return response;
+      }
+
+      throw error;
+    }
   }
 
   async deletePlaylistSongByIdHandler(request, h) {
@@ -122,7 +145,7 @@ class PlaylistsHandler {
     const { songId } = request.payload;
 
     await this._service.verifyPlaylistAccess(playlistId, credentialId);
-    await this._service.deletePlaylistSongById(songId);
+    await this._service.deletePlaylistSongById(playlistId, songId, credentialId);
 
     const response = h.response({
       status: 'success',
@@ -130,6 +153,59 @@ class PlaylistsHandler {
     });
     response.code(200);
     return response;
+  }
+
+  async getPlaylistSongActivitiesHandler(request, h) {
+    try {
+      const { id: credentialId } = request.auth.credentials;
+      const { playlistId } = request.params;
+
+      // First check if playlist exists
+      const playlistExists = await this._service.checkPlaylistExists(playlistId);
+      if (!playlistExists) {
+        const response = h.response({
+          status: 'fail',
+          message: 'Playlist not found',
+        });
+        response.code(404);
+        return response;
+      }
+
+      // Then check if user has access to the playlist
+      await this._service.verifyPlaylistAccess(playlistId, credentialId);
+      const activities = await this._service.getPlaylistSongActivities(playlistId);
+
+      const response = h.response({
+        status: 'success',
+        data: {
+          playlistId,
+          activities,
+        },
+      });
+      response.code(200);
+      return response;
+    } catch (error) {
+      if (error instanceof AuthorizationError) {
+        const response = h.response({
+          status: 'fail',
+          message: error.message,
+        });
+        response.code(403);
+        return response;
+      }
+
+      if (error instanceof NotFoundError) {
+        const response = h.response({
+          status: 'fail',
+          message: error.message,
+        });
+        response.code(404);
+        return response;
+      }
+
+      // Re-throw the error if it's not handled
+      throw error;
+    }
   }
 }
 

@@ -59,7 +59,7 @@ class PlaylistsService {
     }
   }
 
-  async addPlaylistSong(playlistId, songId) {
+  async addPlaylistSong(playlistId, songId, userId) {
     const id = `playlistsongs-${nanoid(16)}`;
 
     const query = {
@@ -80,6 +80,9 @@ class PlaylistsService {
     if (!result.rows.length) {
       throw new NotFoundError('Failed to add song to playlist. Song not found');
     }
+
+    // Record the activity
+    await this.addActivity(playlistId, songId, userId, 'add');
 
     return result.rows[0].id;
   }
@@ -120,10 +123,10 @@ class PlaylistsService {
     return playlist;
   }
 
-  async deletePlaylistSongById(songId) {
+  async deletePlaylistSongById(playlistId, songId, userId) {
     const query = {
-      text: 'DELETE FROM playlistsongs WHERE song_id = $1 RETURNING id',
-      values: [songId],
+      text: 'DELETE FROM playlistsongs WHERE playlist_id = $1 AND song_id = $2 RETURNING id',
+      values: [playlistId, songId],
     };
 
     const result = await this._pool.query(query);
@@ -131,6 +134,9 @@ class PlaylistsService {
     if (!result.rows.length) {
       throw new NotFoundError('Failed to delete song from playlist. Song not found');
     }
+
+    // Record the activity
+    await this.addActivity(playlistId, songId, userId, 'delete');
 
     return result.rows[0].id;
   }
@@ -154,6 +160,16 @@ class PlaylistsService {
     }
   }
 
+  async checkPlaylistExists(playlistId) {
+    const query = {
+      text: 'SELECT id FROM playlists WHERE id = $1',
+      values: [playlistId],
+    };
+
+    const result = await this._pool.query(query);
+    return result.rows.length > 0;
+  }
+
   async verifyPlaylistAccess(playlistId, userId) {
     try {
       await this.verifyPlaylistOwner(playlistId, userId);
@@ -162,12 +178,62 @@ class PlaylistsService {
         throw error;
       }
 
-      try {
-        await this.verifyCollaborator(playlistId, userId);
-      } catch {
-        throw error;
+      if (error instanceof AuthorizationError) {
+        // Lepas blok try-catch karena kita tidak menggunakan error-nya
+        const query = {
+          text: 'SELECT * FROM collaborations WHERE playlist_id = $1 AND user_id = $2',
+          values: [playlistId, userId],
+        };
+
+        const result = await this._pool.query(query);
+
+        if (!result.rows.length) {
+          throw new AuthorizationError('You have no access to this playlist');
+        }
       }
     }
+  }
+
+  async getPlaylistSongActivities(playlistId) {
+    // Check if the playlist exists first
+    const playlistQuery = {
+      text: 'SELECT id FROM playlists WHERE id = $1',
+      values: [playlistId],
+    };
+
+    const playlistResult = await this._pool.query(playlistQuery);
+
+    if (!playlistResult.rows.length) {
+      throw new NotFoundError('Playlist not found');
+    }
+
+    const query = {
+      text: `
+        SELECT users.username, songs.title, playlist_song_activities.action, 
+               playlist_song_activities.time
+        FROM playlist_song_activities 
+        JOIN users ON playlist_song_activities.user_id = users.id
+        JOIN songs ON playlist_song_activities.song_id = songs.id
+        WHERE playlist_song_activities.playlist_id = $1
+        ORDER BY playlist_song_activities.time ASC
+      `,
+      values: [playlistId],
+    };
+
+    const result = await this._pool.query(query);
+    return result.rows;
+  }
+
+  async addActivity(playlistId, songId, userId, action) {
+    const id = `activity-${nanoid(16)}`;
+    const time = new Date().toISOString();
+
+    const query = {
+      text: 'INSERT INTO playlist_song_activities VALUES($1, $2, $3, $4, $5, $6) RETURNING id',
+      values: [id, playlistId, songId, userId, action, time],
+    };
+
+    await this._pool.query(query);
   }
 }
 
