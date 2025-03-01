@@ -29,19 +29,15 @@ class PlaylistsService {
   async getPlaylists(owner) {
     const query = {
       text: `
-        SELECT playlists.id, playlists.name, users.username 
-        FROM playlists 
-        JOIN users ON playlists.owner = users.id 
-        WHERE playlists.owner = $1
+      SELECT playlists.id, playlists.name , users.username FROM playlists
+      LEFT JOIN users ON users.id = playlists.owner 
+      LEFT JOIN collaborations ON collaborations.playlist_id = playlists.id 
+      WHERE playlists.owner = $1 OR collaborations.user_id = $1
       `,
       values: [owner],
     };
 
     const result = await this._pool.query(query);
-
-    if (!result.rows.length) {
-      throw new NotFoundError('No playlist found');
-    }
 
     return result.rows;
   }
