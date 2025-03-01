@@ -179,7 +179,6 @@ class PlaylistsService {
       }
 
       if (error instanceof AuthorizationError) {
-        // Lepas blok try-catch karena kita tidak menggunakan error-nya
         const query = {
           text: 'SELECT * FROM collaborations WHERE playlist_id = $1 AND user_id = $2',
           values: [playlistId, userId],
