@@ -1,6 +1,4 @@
 const autoBind = require('auto-bind');
-const NotFoundError = require('../../exceptions/NotFoundError');
-const InvariantError = require('../../exceptions/InvariantError');
 
 class CollaborationsHandler {
   constructor(collaborationsService, playlistsService, validator) {
@@ -12,45 +10,23 @@ class CollaborationsHandler {
   }
 
   async postCollaborationHandler(request, h) {
-    try {
-      this._validator.validateCollaborationPayload(request.payload);
-      const { id: credentialId } = request.auth.credentials;
-      const { playlistId, userId } = request.payload;
+    this._validator.validateCollaborationPayload(request.payload);
+    const { id: credentialId } = request.auth.credentials;
+    const { playlistId, userId } = request.payload;
 
-      await this._playlistsService.verifyPlaylistOwner(playlistId, credentialId);
-      const collaborationId = await this._collaborationsService.addCollaboration(playlistId, userId);
+    await this._playlistsService.verifyPlaylistOwner(playlistId, credentialId);
+    await this._collaborationsService.verifyUserId(userId);
+    const collaborationId = await this._collaborationsService.addCollaboration(playlistId, userId);
 
-      const response = h.response({
-        status: 'success',
-        message: 'Successfully added collaboration',
-        data: {
-          collaborationId,
-        },
-      });
-      response.code(201);
-      return response;
-    } catch (error) {
-      if (error instanceof NotFoundError) {
-        const response = h.response({
-          status: 'fail',
-          message: error.message,
-        });
-        response.code(404);
-        return response;
-      }
-
-      if (error instanceof InvariantError) {
-        const response = h.response({
-          status: 'fail',
-          message: error.message,
-        });
-        response.code(400);
-        return response;
-      }
-
-      // Re-throw the error if it's not a NotFoundError or InvariantError
-      throw error;
-    }
+    const response = h.response({
+      status: 'success',
+      message: 'Successfully added collaboration',
+      data: {
+        collaborationId,
+      },
+    });
+    response.code(201);
+    return response;
   }
 
   async deleteCollaborationHandler(request) {

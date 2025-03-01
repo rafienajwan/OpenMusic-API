@@ -1,6 +1,7 @@
 const { Pool } = require('pg');
 const { nanoid } = require('nanoid');
 const InvariantError = require('../../exceptions/InvariantError');
+const NotFoundError = require('../../exceptions/NotFoundError');
 
 class CollaborationsService {
   constructor() {
@@ -49,6 +50,19 @@ class CollaborationsService {
       return false;
     }
     return true;
+  }
+
+  async verifyUserId(userId) {
+    const query = {
+      text: 'SELECT * FROM users WHERE id = $1',
+      values: [userId],
+    };
+
+    const result = await this._pool.query(query);
+
+    if (!result.rows.length) {
+      throw new NotFoundError('User ID not found');
+    }
   }
 }
 
