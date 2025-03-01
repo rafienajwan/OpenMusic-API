@@ -3,8 +3,9 @@ const NotFoundError = require('../../exceptions/NotFoundError');
 const InvariantError = require('../../exceptions/InvariantError');
 
 class CollaborationsHandler {
-  constructor(service, validator) {
-    this._service = service;
+  constructor(collaborationsService, playlistsService, validator) {
+    this._collaborationsService = collaborationsService;
+    this._playlistsService = playlistsService;
     this._validator = validator;
 
     autoBind(this);
