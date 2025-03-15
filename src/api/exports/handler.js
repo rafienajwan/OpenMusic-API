@@ -30,6 +30,7 @@ class ExportsHandler {
     }
 
     const message = {
+      playlistId,
       userId: credentialId,
       targetEmail: request.payload.targetEmail,
     };
