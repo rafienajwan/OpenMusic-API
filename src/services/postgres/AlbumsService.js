@@ -63,7 +63,6 @@ class AlbumsService {
         songs: album.songs,
       };
 
-      // Simpan ke cache untuk pengambilan berikutnya
       await this._cacheService.set(`album:${id}`, JSON.stringify(albumData));
 
       return albumData;
@@ -101,7 +100,6 @@ class AlbumsService {
   }
 
   async editAlbumToAddCoverById(id, coverUrl) {
-    // memastikan album ada sebelum mengupdate cover
     await this.getAlbumById(id);
 
     const query = {
