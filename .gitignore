@@ -1,3 +1,4 @@
 node_modules
 OpenMusicAPIV1PostmanTest
 .env
+src/api/uploads/file

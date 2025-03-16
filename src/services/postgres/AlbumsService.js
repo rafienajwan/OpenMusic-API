@@ -39,7 +39,7 @@ class AlbumsService {
       throw new NotFoundError('Album not found');
     }
 
-    const album = result.rows[0];
+    const album = result.rows.map(mapAlbumsToModel)[0];
 
     const querySongs = {
       text: 'SELECT id, title, performer FROM songs WHERE album_id = $1',
@@ -50,7 +50,13 @@ class AlbumsService {
 
     album.songs = songsResult.rows.map(mapSongsToModel);
 
-    return mapAlbumsToModel(album);
+    return {
+      id: album.id,
+      name: album.name,
+      year: album.year,
+      coverUrl: album.coverUrl || null, // Memastikan coverUrl selalu ada
+      songs: album.songs,
+    };
   }
 
   async editAlbumById(id, { name, year }) {
@@ -76,6 +82,22 @@ class AlbumsService {
 
     if (!result.rows.length) {
       throw new NotFoundError('Failed to delete album. Id not found');
+    }
+  }
+
+  async editAlbumToAddCoverById(id, coverUrl) {
+    // memastikan album ada sebelum mengupdate cover
+    await this.getAlbumById(id);
+
+    const query = {
+      text: 'UPDATE albums SET cover_url = $1 WHERE id = $2 RETURNING id',
+      values: [coverUrl, id],
+    };
+    const result = await this._pool.query(query);
+    if (!result.rowCount) {
+      throw new NotFoundError(
+        'Cover Album failed to update. Id is not found',
+      );
     }
   }
 }
