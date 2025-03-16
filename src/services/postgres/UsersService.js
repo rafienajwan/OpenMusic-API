@@ -8,8 +8,9 @@ const AuthenticationError = require('../../exceptions/AuthenticationError');
 const bcrypt = require('bcrypt');
 
 class UsersService {
-  constructor() {
+  constructor(cacheService) {
     this._pool = new Pool();
+    this._cacheService = cacheService;
   }
 
   async verifyNewUsername(username) {
@@ -46,18 +47,31 @@ class UsersService {
   }
 
   async getUserById(userId) {
-    const query = {
-      text: 'SELECT id, username, fullname FROM users WHERE id = $1',
-      values: [userId],
-    };
+    try {
+      const result = await this._cacheService.get(`user:${userId}`);
+      return {
+        user: JSON.parse(result),
+        source: 'cache'
+      };
+    } catch {
+      const query = {
+        text: 'SELECT id, username, fullname FROM users WHERE id = $1',
+        values: [userId],
+      };
 
-    const result = await this._pool.query(query);
+      const result = await this._pool.query(query);
 
-    if (!result.rows.length) {
-      throw new NotFoundError('User not found');
+      if (!result.rows.length) {
+        throw new NotFoundError('User not found');
+      }
+
+      await this._cacheService.set(`user:${userId}`, JSON.stringify(result.rows[0]));
+
+      return {
+        user: result.rows[0],
+        source: 'server'
+      };
     }
-
-    return result.rows[0];
   }
 
   async getUsersByUsername(username) {

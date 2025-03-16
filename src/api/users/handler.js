@@ -33,7 +33,7 @@ class UsersHandler {
   async getUserByIdHandler(request, h) {
     const { id } = request.params;
 
-    const user = await this._service.getUserById(id);
+    const { user, source } = await this._service.getUserById(id);
 
     const response = h.response({
       status: 'success',
@@ -41,6 +41,7 @@ class UsersHandler {
         user,
       },
     });
+    response.header('X-Data-Source', source);
     response.code(200);
     return response;
   }

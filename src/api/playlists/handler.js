@@ -31,7 +31,7 @@ class PlaylistsHandler {
 
   async getPlaylistsHandler(request, h) {
     const { id: credentialId } = request.auth.credentials;
-    const playlists = await this._service.getPlaylists(credentialId);
+    const { playlists, source } = await this._service.getPlaylists(credentialId);
 
     const response = h.response({
       status: 'success',
@@ -39,6 +39,7 @@ class PlaylistsHandler {
         playlists,
       },
     });
+    response.header('X-Data-Source', source);
     response.code(200);
     return response;
   }
@@ -105,7 +106,7 @@ class PlaylistsHandler {
       const { playlistId } = request.params;
 
       await this._service.verifyPlaylistAccess(playlistId, credentialId);
-      const playlist = await this._service.getPlaylistSongs(playlistId);
+      const { playlist, source } = await this._service.getPlaylistSongs(playlistId);
 
       const response = h.response({
         status: 'success',
@@ -113,6 +114,7 @@ class PlaylistsHandler {
           playlist,
         },
       });
+      response.header('X-Data-Source', source);
       response.code(200);
       return response;
     } catch (error) {
@@ -173,7 +175,7 @@ class PlaylistsHandler {
 
       // Then check if user has access to the playlist
       await this._service.verifyPlaylistAccess(playlistId, credentialId);
-      const activities = await this._service.getPlaylistSongActivities(playlistId);
+      const { activities, source } = await this._service.getPlaylistSongActivities(playlistId);
 
       const response = h.response({
         status: 'success',
@@ -182,6 +184,7 @@ class PlaylistsHandler {
           activities,
         },
       });
+      response.header('X-Data-Source', source);
       response.code(200);
       return response;
     } catch (error) {

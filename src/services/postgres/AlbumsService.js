@@ -31,7 +31,10 @@ class AlbumsService {
   async getAlbumById(id) {
     try {
       const result = await this._cacheService.get(`album:${id}`);
-      return JSON.parse(result);
+      return {
+        album: JSON.parse(result),
+        source: 'cache'
+      };
     } catch {
       const query = {
         text: 'SELECT * FROM albums WHERE id = $1',
@@ -65,7 +68,10 @@ class AlbumsService {
 
       await this._cacheService.set(`album:${id}`, JSON.stringify(albumData));
 
-      return albumData;
+      return {
+        album: albumData,
+        source: 'server'
+      };
     }
   }
 
