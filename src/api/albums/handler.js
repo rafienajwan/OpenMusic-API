@@ -65,6 +65,65 @@ class AlbumsHandler {
     response.code(200);
     return response;
   }
+
+  async postAlbumLikeHandler(request, h) {
+    const { id: albumId } = request.params;
+    const { id: userId } = request.auth.credentials;
+
+    // Debugging userId and albumId
+    console.log('User ID:', userId);
+    console.log('Album ID:', albumId);
+
+    await this._service.getAlbumById(albumId);
+
+    const alreadyLike = await this._service.validateLikeAlbum(userId, albumId);
+    if (!alreadyLike) {
+      await this._service.addAlbumLikes(userId, albumId);
+    } else {
+      const response = h.response({
+        status: 'fail',
+        message: 'you can only like the album once',
+      });
+      response.code(400);
+      return response;
+    }
+
+    const response = h.response({
+      status: 'success',
+      message: 'Like successfully added',
+    });
+    response.code(201);
+    return response;
+  }
+
+  async getAlbumLikeHandler(request, h) {
+    const { id: albumId } = request.params;
+    const { customHeader, likes } = await this._service.getAlbumLikes(albumId);
+
+    const response = h.response({
+      status: 'success',
+      data: {
+        likes,
+      },
+    });
+    response.header('X-Data-Source', customHeader);
+    response.code(200);
+    return response;
+  }
+
+  async deleteAlbumLikeHandler(request, h) {
+    const { id: albumId } = request.params;
+    const { id: userId } = request.auth.credentials;
+
+    await this._service.deleteAlbumLike(albumId, userId);
+
+    const response = h.response({
+      status: 'success',
+      message: 'Successfully unliked the album',
+    });
+    response.code(200);
+    return response;
+  }
 }
 
 module.exports = AlbumsHandler;
