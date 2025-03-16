@@ -16,7 +16,7 @@ class UploadsHandler {
 
     const filename = await this._storageService.writeFile(cover, cover.hapi);
     const baseUrl = `http://${process.env.HOST}:${process.env.PORT}`;
-    const coverUrl = `${baseUrl}/uploads/pictures/${filename}`;
+    const coverUrl = `${baseUrl}/albums/covers/${filename}`;
 
     await this._albumsService.editAlbumToAddCoverById(id, coverUrl);
 

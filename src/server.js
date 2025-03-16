@@ -56,7 +56,7 @@ const init = async () => {
   const playlistsService = new PlaylistsService(collaborationsService);
   const usersService = new UsersService();
   const authenticationsService = new AuthenticationsService();
-  const storageService = new StorageService(path.resolve(__dirname, 'api/uploads/file/images'));
+  const storageService = new StorageService(path.resolve(__dirname, 'api/uploads/file'));
 
   const server = Hapi.server({
     port: process.env.PORT,
